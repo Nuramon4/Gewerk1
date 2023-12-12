@@ -1,0 +1,105 @@
+#include <iostream>
+#include <string>
+#include <chrono>
+#include <memory>
+#include <thread>
+
+// Vorwärtsdeklaration der Agent-Klasse
+class Agent;
+
+// Vorwärtsdeklaration des Controllers
+class Controller;
+
+// Beispiel für eine Nachrichtenklasse
+class Message {
+public:
+    Agent* sender;
+    Agent* receiver;
+    enum class MessageType {
+        WerkstueckAngekommen,
+        // Weitere Nachrichtentypen hier
+    };
+    MessageType type;
+
+    // Konstruktor für die Nachrichtenklasse
+    Message(Agent* sender, Agent* receiver, MessageType type)
+        : sender(sender), receiver(receiver), type(type) {}
+};
+
+// Beispiel für eine generische Agentenklasse
+class Agent {
+protected:
+    Message message; // Message-Objekt als Attribut
+
+public:
+    virtual void sendMessage(Agent* receiver, Message::MessageType type) = 0; // Reine virtuelle Methode
+    virtual void receiveMessage(const Message& receivedMessage) = 0; // Reine virtuelle Methode
+};
+
+// Beispiel für einen konkreten Agenten (Fertigungsstations-Agent)
+class FertigungsstationsAgent : public Agent {
+public:
+    void processWerkstueckAngekommen() {
+        sendMessage(std::make_unique<RoboterAgent>(), Message::MessageType::WerkstueckAngekommen);
+    }
+
+    void sendMessage(std::unique_ptr<RoboterAgent> receiver, Message::MessageType type) {
+        message = Message(this, receiver.get(), type);
+        receiver->receiveMessage(message);
+    }
+
+    void receiveMessage(const Message& receivedMessage) override {
+        // Spezifische Verarbeitung für Fertigungsstations-Agent
+        std::cout << "FertigungsstationsAgent received message of type: " << static_cast<int>(receivedMessage.type) << std::endl;
+    }
+};
+
+// Beispiel für einen konkreten Agenten (Roboter-Agent)
+class RoboterAgent : public Agent {
+public:
+    void sendMessage(Agent* receiver, Message::MessageType type) override {
+        message = Message(this, receiver, type);
+        receiver->receiveMessage(message);
+    }
+
+    void receiveMessage(const Message& receivedMessage) override {
+        // Spezifische Verarbeitung für Roboter-Agent
+        std::cout << "Robot received message of type: " << static_cast<int>(receivedMessage.type) << std::endl;
+    }
+};
+
+// Controller-Klasse
+class Controller {
+public:
+    void startAutomation() {
+        FertigungsstationsAgent fertigungsstation;
+        RoboterAgent roboter;
+
+        // Agenteninteraktionen
+        fertigungsstation.processWerkstueckAngekommen();
+        // Keine explizite Freigabe des Roboters erforderlich
+    }
+};
+
+// Beispiel für eine Datenbankzugriffsklasse
+class DatabaseManager {
+public:
+    void writeToDatabase(const std::string& data) {
+        // Implementieren Sie den Schreibzugriff in die Datenbank
+        std::cout << "Writing to database: " << data << std::endl;
+    }
+
+    std::string readFromDatabase() {
+        // Implementieren Sie den Lesezugriff aus der Datenbank
+        return "Daten aus der Datenbank"; // Beispielrückgabewert
+    }
+};
+
+int main() {
+    Controller controller;
+
+    // Starten Sie die Automatisierung
+    controller.startAutomation();
+
+    return 0;
+}
